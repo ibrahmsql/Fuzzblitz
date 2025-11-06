@@ -171,7 +171,7 @@ cargo install fuzzblitz
 
 ---
 
-## FuzzBlitz vs ffuf
+## 🆚 vs ffuf
 
 | Feature | ffuf | FuzzBlitz |
 |---------|------|-----------|
