@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::io::{self, Write};
 use std::sync::{Arc, Mutex};
 use crate::core::Statistics;

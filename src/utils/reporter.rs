@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::output::FuzzResult;
 use crate::core::Statistics;
 use colored::Colorize;
@@ -53,7 +54,7 @@ impl Reporter {
         }
     }
     
-    pub fn print_summary(&self, stats: &Statistics, results_count: usize) {
+    pub fn print_summary(&self, stats: &Statistics, _results_count: usize) {
         println!();
         if self.colorize {
             println!("{}", "═".repeat(70).green());

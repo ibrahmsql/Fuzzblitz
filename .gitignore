@@ -39,3 +39,7 @@ output/
 # Misc
 .env
 .env.local
+
+# Wordlists (too large for git, download separately)
+wordlists/*.txt
+!wordlists/README.md

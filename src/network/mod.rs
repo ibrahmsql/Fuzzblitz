@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 pub mod client;
 pub mod request_builder;
 pub mod url_builder;

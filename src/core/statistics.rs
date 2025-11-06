@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::sync::atomic::{AtomicUsize, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;

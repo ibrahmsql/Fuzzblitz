@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 pub mod manager;
 pub mod cookies;
 pub mod tokens;

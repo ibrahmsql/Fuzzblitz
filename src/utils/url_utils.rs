@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use url::{Url, ParseError};
 use std::collections::HashMap;
 

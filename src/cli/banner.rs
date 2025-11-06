@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use colored::Colorize;
 use crate::cli::ProgramArgs;
 
@@ -5,12 +6,12 @@ pub fn print_banner(_args: &ProgramArgs) {
     println!();
     println!("{}", "_______________________________________________________________".bright_yellow());
     println!();
-    println!("  {}", r#"  _____              ______ _ _ _       "#.bright_red().bold());
-    println!("  {}", r#" |  ___|            |  _  \ (_) |      "#.bright_red().bold());
-    println!("  {}", r#" | |__ _   _ _____ _| |_| / |_| |_ ____"#.bright_yellow().bold());
-    println!("  {}", r#" |  __| | | |_  / |_  ____|/ | __/_  /"#.bright_green().bold());
+    println!("  {}", r#"  _____              ______ _ _ _       "#.bright_cyan().bold());
+    println!("  {}", r#" |  ___|            |  _  \ (_) |      "#.bright_cyan().bold());
+    println!("  {}", r#" | |__ _   _ _____ _| |_| / |_| |_ ____"#.bright_cyan().bold());
+    println!("  {}", r#" |  __| | | |_  / |_  ____|/ | __/_  /"#.bright_cyan().bold());
     println!("  {}", r#" | |  | |_| |/ /| |_| |_| | | |_ / / "#.bright_cyan().bold());
-    println!("  {}", r#" \_|   \__,_/___|\__|_____/_|\__/___|"#.bright_blue().bold());
+    println!("  {}", r#" \_|   \__,_/___|\__|_____/_|\__/___|"#.bright_cyan().bold());
     println!();
     println!("           {}  {}  {}", 
         "⚡".bright_yellow(),

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 /// Represents a fuzzing response with analyzed metrics
 
 #[derive(Debug, Clone)]

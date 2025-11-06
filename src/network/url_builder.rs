@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 /// URL building and manipulation utilities
 
 pub fn build_url(url_template: &str, replacements: &[(String, String)]) -> String {

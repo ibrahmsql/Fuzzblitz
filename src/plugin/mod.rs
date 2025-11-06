@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 pub mod manager;
 pub mod loader;
 pub mod hooks;

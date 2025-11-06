@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 pub mod detector;
 pub mod bypass;
 pub mod signatures;

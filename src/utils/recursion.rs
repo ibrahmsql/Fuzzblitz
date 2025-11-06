@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::collections::{HashSet, VecDeque};
 use std::sync::{Arc, Mutex};
 
@@ -117,7 +118,7 @@ pub fn should_recurse(status_code: u16, content_type: &Option<String>) -> bool {
     true
 }
 
-pub fn extract_recursion_candidates(body: &str, base_url: &str) -> Vec<String> {
+pub fn extract_recursion_candidates(body: &str, _base_url: &str) -> Vec<String> {
     let mut candidates = Vec::new();
     
     let patterns = [

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use regex::Regex;
 
 /// Extract assets from HTML

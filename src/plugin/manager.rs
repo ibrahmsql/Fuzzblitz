@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use super::registry::{PluginRegistry, PluginMetadata};
 use super::hooks::{HookManager, Hook};
 use std::collections::HashMap;

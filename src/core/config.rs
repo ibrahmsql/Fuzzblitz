@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::cli::ProgramArgs;
 use std::time::Duration;
 

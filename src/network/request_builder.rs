@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use reqwest::{Client, Request, Method, header::{HeaderMap, HeaderName, HeaderValue}};
 use std::str::FromStr;
 use std::collections::HashMap;

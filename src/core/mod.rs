@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 pub mod engine;
 pub mod statistics;
 pub mod rate_limiter;

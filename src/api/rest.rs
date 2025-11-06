@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use serde_json::{json, Value};
 
 pub struct RestFuzzer;

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::sync::Arc;
 use tokio::time::{sleep, Duration};
 use super::executor::{RequestExecutor, ExecutionResult};

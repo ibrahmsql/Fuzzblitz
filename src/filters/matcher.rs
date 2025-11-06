@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use regex::Regex;
 use crate::cli::ProgramArgs;
 use super::response::FuzzResponse;

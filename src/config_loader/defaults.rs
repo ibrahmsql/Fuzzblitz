@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use super::parser::{ConfigFile, HttpConfig, FuzzingConfig, FilteringConfig, OutputConfig};
 
 pub struct DefaultConfig;

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use base64::{Engine as _, engine::general_purpose};
 
 pub struct JwtHelper;

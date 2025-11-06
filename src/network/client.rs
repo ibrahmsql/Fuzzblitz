@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use reqwest::{Client, Method, Proxy, header::{HeaderMap, HeaderName, HeaderValue}};
 use std::time::Duration;
 use std::str::FromStr;

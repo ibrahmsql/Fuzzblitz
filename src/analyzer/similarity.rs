@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 /// Calculate similarity between responses
 pub struct SimilarityAnalyzer;
 

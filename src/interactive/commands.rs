@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 /// Command types for interactive mode
 #[derive(Debug, Clone)]
 pub enum Command {

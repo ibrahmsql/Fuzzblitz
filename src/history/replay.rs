@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use super::session::{Session, SessionResult};
 use std::collections::HashMap;
 

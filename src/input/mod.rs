@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 pub mod wordlist;
 pub mod payloads;
 pub mod encoder;

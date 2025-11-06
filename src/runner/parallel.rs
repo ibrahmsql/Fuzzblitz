@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use futures::stream::{self, StreamExt};
 use std::sync::Arc;
 use super::executor::{RequestExecutor, ExecutionResult};

@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 pub mod rest;
 pub mod swagger;
 pub mod endpoints;

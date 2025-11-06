@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use colored::*;
 
 use crate::{FuzzResult, Args};

@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 pub mod pattern;
 pub mod similarity;
 pub mod anomaly;

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 /// Detect anomalies in responses
 pub struct AnomalyDetector {
     baseline_size: Option<usize>,

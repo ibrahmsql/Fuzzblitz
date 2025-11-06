@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // Legacy logging module - kept for compatibility
 // Most logging is now handled in main.rs with the new output system
 

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::sync::Arc;
 use std::time::Instant;
 use std::collections::HashMap;

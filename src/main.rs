@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Instant;
@@ -46,7 +50,8 @@ use filters::{MatcherFilter, FuzzResponse};
 use input::{Wordlist, PayloadGenerator, FuzzMode, parse_wordlist_spec, parse_encoder_spec, encode_payload};
 use output::{OutputWriter, OutputFormat, FuzzResult};
 use core::{Statistics, RateLimiter};
-use utils::auto_calibrate;
+// Unused import - commented to fix build warnings
+// use utils::auto_calibrate;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
