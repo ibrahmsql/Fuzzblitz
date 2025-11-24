@@ -1,0 +1,10 @@
+# Example URL list for testing
+# Comments are supported (lines starting with #)
+
+# URLs with FUZZ keyword
+https://example.com/FUZZ
+https://example.com/api/FUZZ
+
+# URLs without FUZZ (use --auto-fuzz to automatically append /FUZZ)
+https://test.com
+https://demo.com/api

@@ -96,6 +96,20 @@ fuzzblitz -u https://target.com/FUZZ \
   -e .php,.html,.bak
 ```
 
+### Bulk URL fuzzing (NEW!)
+```bash
+# Fuzz multiple targets from a file
+fuzzblitz -U targets.txt -w wordlist.txt
+
+# Automatically add /FUZZ to URLs without it
+fuzzblitz -U targets.txt -w wordlist.txt --auto-fuzz
+
+# Example targets.txt:
+# https://site1.com/FUZZ
+# https://site2.com/api/FUZZ
+# https://site3.com
+```
+
 ---
 
 ## 🎛️ Common Options
@@ -103,6 +117,8 @@ fuzzblitz -u https://target.com/FUZZ \
 | Option | Description |
 |--------|-------------|
 | `-u, --url` | Target URL (use FUZZ keyword) |
+| `-U, --urls-file` | File with multiple URLs (NEW!) |
+| `--auto-fuzz` | Auto-add /FUZZ to URLs (NEW!) |
 | `-w, --wordlist` | Wordlist file path |
 | `-t, --threads` | Number of threads [default: 40] |
 | `-X, --method` | HTTP method [default: GET] |

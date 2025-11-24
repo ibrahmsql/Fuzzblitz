@@ -18,6 +18,19 @@ pub struct ProgramArgs {
     pub url: Option<String>,
 
     #[clap(
+        short='U',
+        long="urls-file",
+        help="File containing multiple URLs to fuzz (one per line)"
+    )]
+    pub urls_file: Option<String>,
+
+    #[clap(
+        long="auto-fuzz",
+        help="Automatically append /FUZZ to URLs that don't contain FUZZ keyword"
+    )]
+    pub auto_fuzz: bool,
+
+    #[clap(
         short='X', 
         long="method", 
         default_value="GET",

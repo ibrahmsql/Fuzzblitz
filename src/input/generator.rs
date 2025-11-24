@@ -19,23 +19,24 @@ impl FuzzMode {
     }
 }
 
+#[derive(Clone)]
 pub struct PayloadGenerator {
-    wordlists: Vec<Wordlist>,
-    mode: FuzzMode,
+    pub wordlists: Vec<Wordlist>,
+    pub mode: FuzzMode,
     current_indices: Vec<usize>,
-    finished: bool,
+    done: bool,
 }
 
 impl PayloadGenerator {
     pub fn new(wordlists: Vec<Wordlist>, mode: FuzzMode) -> Self {
         let current_indices = vec![0; wordlists.len()];
-        let finished = wordlists.is_empty() || wordlists.iter().any(|w| w.words.is_empty());
+        let done = wordlists.is_empty() || wordlists.iter().any(|w| w.words.is_empty());
         
         Self {
             wordlists,
             mode,
             current_indices,
-            finished,
+            done,
         }
     }
     
@@ -69,7 +70,7 @@ impl Iterator for PayloadGenerator {
     type Item = HashMap<String, String>;
     
     fn next(&mut self) -> Option<Self::Item> {
-        if self.finished {
+        if self.done {
             return None;
         }
         
@@ -105,7 +106,7 @@ impl PayloadGenerator {
         }
         
         if carry {
-            self.finished = true;
+            self.done = true;
         }
         
         Some(result)
@@ -117,7 +118,7 @@ impl PayloadGenerator {
         // Take one from each wordlist in parallel
         for (i, wordlist) in self.wordlists.iter().enumerate() {
             if self.current_indices[i] >= wordlist.words.len() {
-                self.finished = true;
+                self.done = true;
                 return None;
             }
             let word = &wordlist.words[self.current_indices[i]];
@@ -135,7 +136,7 @@ impl PayloadGenerator {
     fn next_sniper(&mut self) -> Option<HashMap<String, String>> {
         // Sniper mode: one wordlist, iterate through each position
         if self.wordlists.is_empty() {
-            self.finished = true;
+            self.done = true;
             return None;
         }
         
@@ -143,7 +144,7 @@ impl PayloadGenerator {
         let current_word_idx = self.current_indices[1];
         
         if current_wordlist_idx >= self.wordlists.len() {
-            self.finished = true;
+            self.done = true;
             return None;
         }
         

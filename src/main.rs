@@ -47,7 +47,7 @@ mod subdomain;
 use cli::{ProgramArgs, print_banner, print_config_summary};
 use network::{FuzzClient, build_url, add_extension};
 use filters::{MatcherFilter, FuzzResponse};
-use input::{Wordlist, PayloadGenerator, FuzzMode, parse_wordlist_spec, parse_encoder_spec, encode_payload};
+use input::{Wordlist, PayloadGenerator, FuzzMode, parse_wordlist_spec, parse_encoder_spec, encode_payload, UrlList};
 use output::{OutputWriter, OutputFormat, FuzzResult};
 use core::{Statistics, RateLimiter};
 // Unused import - commented to fix build warnings
@@ -57,34 +57,73 @@ use core::{Statistics, RateLimiter};
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = ProgramArgs::parse();
     
-    // Validate arguments
-    if args.url.is_none() {
-        eprintln!("{}\n", "Error: -u (URL) flag is required".red().bold());
-        eprintln!("Example: rustfuzz -u https://example.com/FUZZ -w wordlist.txt");
+    // Validate arguments - either URL or URLs file required
+    if args.url.is_none() && args.urls_file.is_none() {
+        eprintln!("{}\n", "Error: Either -u (URL) or -U (URLs file) flag is required".red().bold());
+        eprintln!("Examples:");
+        eprintln!("  Single URL:    fuzzblitz -u https://example.com/FUZZ -w wordlist.txt");
+        eprintln!("  Multiple URLs: fuzzblitz -U urls.txt -w wordlist.txt");
+        std::process::exit(1);
+    }
+    
+    if args.url.is_some() && args.urls_file.is_some() {
+        eprintln!("{}\n", "Error: Cannot use both -u and -U flags together".red().bold());
+        eprintln!("Use either -u for a single URL or -U for a file containing multiple URLs");
         std::process::exit(1);
     }
     
     if args.wordlist.is_empty() {
         eprintln!("{}\n", "Error: -w (wordlist) flag is required".red().bold());
-        eprintln!("Example: rustfuzz -u https://example.com/FUZZ -w wordlist.txt");
+        eprintln!("Example: fuzzblitz -u https://example.com/FUZZ -w wordlist.txt");
         std::process::exit(1);
     }
     
-    let url = args.url.as_ref().unwrap();
-    
-    if !url.contains("FUZZ") {
-        eprintln!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".red());
-        eprintln!("{}\n", "❌ Error: URL must contain the keyword 'FUZZ'".red().bold());
-        eprintln!("{}", "The FUZZ keyword is required for fuzzing!".yellow());
-        eprintln!("{}", "It will be replaced with each word from the wordlist.\n".yellow());
-        eprintln!("{}", "Examples:".bright_cyan().bold());
-        eprintln!("  {} fuzzblitz -u https://example.com/{} -w wordlist.txt", "⚡".bright_yellow(), "FUZZ".bright_green().bold());
-        eprintln!("  {} fuzzblitz -u https://example.com/api/{}/ -w wordlist.txt", "⚡".bright_yellow(), "FUZZ".bright_green().bold());
-        eprintln!("  {} fuzzblitz -u https://example.com/{}/admin -w wordlist.txt", "⚡".bright_yellow(), "FUZZ".bright_green().bold());
-        eprintln!("  {} fuzzblitz -u https://example.com/?page={} -w wordlist.txt\n", "⚡".bright_yellow(), "FUZZ".bright_green().bold());
-        eprintln!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".red());
-        std::process::exit(1);
-    }
+    // Load URLs - either from single URL or from file
+    let urls = if let Some(ref url_file) = args.urls_file {
+        // Load URLs from file
+        match UrlList::from_file(url_file, args.auto_fuzz) {
+            Ok(url_list) => {
+                if !args.auto_fuzz {
+                    // Validate that all URLs contain FUZZ if auto_fuzz is not enabled
+                    if let Err(e) = url_list.validate_urls() {
+                        eprintln!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".red());
+                        eprintln!("{}\n", format!("❌ Error: {}", e).red().bold());
+                        eprintln!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".red());
+                        std::process::exit(1);
+                    }
+                }
+                if !args.silent {
+                    println!("[+] Loaded {} URLs from {}", url_list.len(), url_file);
+                }
+                url_list.urls
+            },
+            Err(e) => {
+                eprintln!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".red());
+                eprintln!("{}\n", format!("❌ Error loading URLs file: {}", e).red().bold());
+                eprintln!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".red());
+                std::process::exit(1);
+            }
+        }
+    } else {
+        // Single URL mode
+        let url = args.url.as_ref().unwrap();
+        
+        if !url.contains("FUZZ") {
+            eprintln!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".red());
+            eprintln!("{}\n", "❌ Error: URL must contain the keyword 'FUZZ'".red().bold());
+            eprintln!("{}", "The FUZZ keyword is required for fuzzing!".yellow());
+            eprintln!("{}", "It will be replaced with each word from the wordlist.\n".yellow());
+            eprintln!("{}", "Examples:".bright_cyan().bold());
+            eprintln!("  {} fuzzblitz -u https://example.com/{} -w wordlist.txt", "⚡".bright_yellow(), "FUZZ".bright_green().bold());
+            eprintln!("  {} fuzzblitz -u https://example.com/api/{}/ -w wordlist.txt", "⚡".bright_yellow(), "FUZZ".bright_green().bold());
+            eprintln!("  {} fuzzblitz -u https://example.com/{}/admin -w wordlist.txt", "⚡".bright_yellow(), "FUZZ".bright_green().bold());
+            eprintln!("  {} fuzzblitz -u https://example.com/?page={} -w wordlist.txt\n", "⚡".bright_yellow(), "FUZZ".bright_green().bold());
+            eprintln!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".red());
+            std::process::exit(1);
+        }
+        
+        vec![url.clone()]
+    };
     
     // Print banner and config
     if !args.silent {
@@ -148,180 +187,210 @@ async fn main() -> Result<(), Box<dyn Error>> {
         vec![]
     };
     
-    // Setup progress bar
-    let progress = if !args.silent && !args.json_output {
-        let pb = ProgressBar::new(total_requests as u64);
-        pb.set_style(
-            ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({per_sec}) | Matched: {msg}")
-                .unwrap()
-                .progress_chars("#>-")
-        );
-        Some(pb)
-    } else {
-        None
-    };
-    
-    // Setup rate limiter
-    let rate_limiter = Arc::new(RateLimiter::new(args.threads, if args.rate > 0 { Some(args.rate) } else { None }));
-    
     // Setup delay range
     let delay_range = parse_delay(&args.delay);
     
-    // Statistics
-    let stats = Arc::new(Statistics::new(total_requests));
+    // Global statistics across all URLs
+    let mut total_matched = 0;
+    let global_start = Instant::now();
     
-    // Prepare payloads
-    let mut all_payloads = Vec::new();
-    for payload_map in payload_gen {
-        all_payloads.push(payload_map);
-    }
-    
-    // Process requests concurrently
-    let results = stream::iter(all_payloads)
-        .map(|payload_map| {
-            let url = url.clone();
-            let http_client = Arc::clone(&http_client);
-            let matcher_filter = Arc::clone(&matcher_filter);
-            let rate_limiter = rate_limiter.clone_limiter();
-            let encoder_map = Arc::clone(&encoder_map);
-            let args = args.clone();
-            let extensions = extensions.clone();
-            let delay_range = delay_range;
-            let stats_clone = Arc::clone(&stats);
-            
-            async move {
-                let _guard = rate_limiter.acquire().await;
+    // Process each URL
+    for (url_idx, url) in urls.iter().enumerate() {
+        if urls.len() > 1 && !args.silent {
+            println!();
+            println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".bright_cyan());
+            println!("{} URL {}/{}: {}", "⚡".bright_yellow(), url_idx + 1, urls.len(), url.bright_white());
+            println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".bright_cyan());
+        }
+        
+        // Setup progress bar for this URL
+        let progress = if !args.silent && !args.json_output {
+            let pb = ProgressBar::new(total_requests as u64);
+            pb.set_style(
+                ProgressStyle::default_bar()
+                    .template("[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({per_sec}) | Matched: {msg}")
+                    .unwrap()
+                    .progress_chars("#>-")
+            );
+            Some(pb)
+        } else {
+            None
+        };
+        
+        // Setup rate limiter
+        let rate_limiter = Arc::new(RateLimiter::new(args.threads, if args.rate > 0 { Some(args.rate) } else { None }));
+        
+        // Statistics for this URL
+        let stats = Arc::new(Statistics::new(total_requests));
+        
+        // Prepare payloads
+        let mut all_payloads = Vec::new();
+        for payload_map in payload_gen.clone() {
+            all_payloads.push(payload_map);
+        }
+        
+        // Process requests concurrently
+        let results = stream::iter(all_payloads)
+            .map(|payload_map| {
+                let url = url.clone();
+                let http_client = Arc::clone(&http_client);
+                let matcher_filter = Arc::clone(&matcher_filter);
+                let rate_limiter = rate_limiter.clone_limiter();
+                let encoder_map = Arc::clone(&encoder_map);
+                let args = args.clone();
+                let extensions = extensions.clone();
+                let delay_range = delay_range;
+                let stats_clone = Arc::clone(&stats);
                 
-                // Apply delay if specified
-                if let Some((min_ms, max_ms)) = delay_range {
-                    let delay_ms = if min_ms == max_ms {
-                        min_ms
-                    } else {
-                        rand::thread_rng().gen_range(min_ms..=max_ms)
-                    };
-                    sleep(Duration::from_millis(delay_ms)).await;
-                }
-                
-                // Build replacements with encoding
-                let mut replacements = Vec::new();
-                for (keyword, value) in &payload_map {
-                    let encoded_value = if let Some(encoders) = encoder_map.get(keyword) {
-                        encode_payload(value, encoders)
-                    } else {
-                        value.clone()
-                    };
-                    replacements.push((keyword.clone(), encoded_value));
-                }
-                
-                // Try extensions if specified
-                let urls_to_try = if extensions.is_empty() {
-                    vec![build_url(&url, &replacements)]
-                } else {
-                    let base_url = build_url(&url, &replacements);
-                    let mut urls = vec![base_url.clone()];
-                    for ext in &extensions {
-                        urls.push(add_extension(&base_url, ext));
-                    }
-                    urls
-                };
-                
-                let mut results = Vec::new();
-                for test_url in urls_to_try {
-                    let start = Instant::now();
+                async move {
+                    let _guard = rate_limiter.acquire().await;
                     
-                    match http_client.send_request(&test_url, args.ignore_body).await {
-                        Ok((status_code, body)) => {
-                            let response_time_ms = start.elapsed().as_millis() as i64;
-                            
-                            let fuzz_response = FuzzResponse::new(
-                                status_code,
-                                body,
-                                response_time_ms
-                            );
-                            
-                            if matcher_filter.should_show(&fuzz_response) {
-                                let keyword_str = payload_map.iter()
-                                    .map(|(k, v)| format!("{}={}", k, v))
-                                    .collect::<Vec<_>>()
-                                    .join(", ");
+                    // Apply delay if specified
+                    if let Some((min_ms, max_ms)) = delay_range {
+                        let delay_ms = if min_ms == max_ms {
+                            min_ms
+                        } else {
+                            rand::thread_rng().gen_range(min_ms..=max_ms)
+                        };
+                        sleep(Duration::from_millis(delay_ms)).await;
+                    }
+                    
+                    // Build replacements with encoding
+                    let mut replacements = Vec::new();
+                    for (keyword, value) in &payload_map {
+                        let encoded_value = if let Some(encoders) = encoder_map.get(keyword.as_str()) {
+                            encode_payload(value, encoders)
+                        } else {
+                            value.to_string()
+                        };
+                        replacements.push((keyword.clone(), encoded_value));
+                    }
+                    
+                    // Try extensions if specified
+                    let urls_to_try = if extensions.is_empty() {
+                        vec![build_url(&url, &replacements)]
+                    } else {
+                        let base_url = build_url(&url, &replacements);
+                        let mut urls = vec![base_url.clone()];
+                        for ext in &extensions {
+                            urls.push(add_extension(&base_url, ext));
+                        }
+                        urls
+                    };
+                    
+                    let mut results = Vec::new();
+                    for test_url in urls_to_try {
+                        let start = Instant::now();
+                        
+                        match http_client.send_request(&test_url, args.ignore_body).await {
+                            Ok((status_code, body)) => {
+                                let response_time_ms = start.elapsed().as_millis() as i64;
                                 
-                                results.push(FuzzResult::new(
-                                    keyword_str,
-                                    test_url,
-                                    fuzz_response.status_code,
-                                    fuzz_response.body_length,
-                                    fuzz_response.lines,
-                                    fuzz_response.words,
-                                    response_time_ms,
-                                ));
+                                let fuzz_response = FuzzResponse::new(
+                                    status_code,
+                                    body,
+                                    response_time_ms
+                                );
+                                
+                                if matcher_filter.should_show(&fuzz_response) {
+                                    let keyword_str = payload_map.iter()
+                                        .map(|(k, v)| format!("{}={}", k, v))
+                                        .collect::<Vec<_>>()
+                                        .join(", ");
+                                    
+                                    results.push(FuzzResult::new(
+                                        keyword_str,
+                                        test_url,
+                                        fuzz_response.status_code,
+                                        fuzz_response.body_length,
+                                        fuzz_response.lines,
+                                        fuzz_response.words,
+                                        response_time_ms,
+                                    ));
+                                }
+                            },
+                            Err(_) => {
+                                // Silently skip errors or log if verbose
                             }
-                        },
-                        Err(_) => {
-                            // Silently skip errors or log if verbose
                         }
                     }
+                    
+                    results
+                }
+            })
+            .buffer_unordered(args.threads)
+            .collect::<Vec<_>>()
+            .await;
+        
+        // Process results for this URL
+        let mut matched_count = 0;
+        for result_vec in results {
+            stats.increment_completed();
+            
+            for result in result_vec {
+                matched_count += 1;
+                stats.increment_matched();
+                
+                // Print result
+                if !args.silent && !args.json_output {
+                    // Clear progress bar line before printing result
+                    if progress.is_some() {
+                        print!("\r{}\r", " ".repeat(100));
+                    }
+                    print_result(&result, args.colorize, args.verbose);
+                    use std::io::{self, Write};
+                    io::stdout().flush().unwrap();
+                } else if args.json_output {
+                    let json = serde_json::to_string(&result)?;
+                    println!("{}", json);
                 }
                 
-                results
-            }
-        })
-        .buffer_unordered(args.threads)
-        .collect::<Vec<_>>()
-        .await;
-    
-    // Process results
-    let mut matched_count = 0;
-    for result_vec in results {
-        stats.increment_completed();
-        
-        for result in result_vec {
-            matched_count += 1;
-            stats.increment_matched();
-            
-            // Print result
-            if !args.silent && !args.json_output {
-                // Clear progress bar line before printing result
-                if progress.is_some() {
-                    print!("\r{}\r", " ".repeat(100));
-                }
-                print_result(&result, args.colorize, args.verbose);
-                use std::io::{self, Write};
-                io::stdout().flush().unwrap();
-            } else if args.json_output {
-                let json = serde_json::to_string(&result)?;
-                println!("{}", json);
+                // Save to file
+                output_writer.write_result(&result)?;
             }
             
-            // Save to file
-            output_writer.write_result(&result)?;
+            // Update progress
+            if let Some(ref pb) = progress {
+                pb.set_message(format!("{}", matched_count));
+                pb.inc(1);
+            }
         }
         
-        // Update progress
-        if let Some(ref pb) = progress {
-            pb.set_message(format!("{}", matched_count));
-            pb.inc(1);
+        if let Some(pb) = progress {
+            pb.finish_with_message(format!("{}", matched_count));
         }
-    }
-    
-    if let Some(pb) = progress {
-        pb.finish_with_message(format!("{}", matched_count));
+        
+        // Print summary for this URL
+        if urls.len() > 1 && !args.silent {
+            println!();
+            println!(" :: {} : {} matched ({}% match rate) for {}", 
+                "Results".bright_blue(), 
+                stats.matched(),
+                stats.match_rate() as u64,
+                url.bright_white()
+            );
+        }
+        
+        total_matched += matched_count;
     }
     
     // Write footer
     output_writer.write_footer()?;
     
-    // Print summary - ffuf style
+    // Print final summary
     if !args.silent {
         println!();
         println!("{}", "________________________________________________".bright_white());
         println!();
-        println!(" :: {} : {}", "Progress".bright_blue(), format!("[{}/{}] :: Job [1/1] :: {} req/sec :: Duration: [0:00:{:02}] :: Errors: 0 ::",
-            stats.total(), stats.total(), stats.req_per_sec() as u64, stats.elapsed_secs()));
-        println!(" :: {} : {}", "Results".bright_blue(), format!("{} matched ({}% match rate)", 
-            stats.matched(),
-            stats.match_rate() as u64
-        ));
+        if urls.len() > 1 {
+            println!(" :: {} : Fuzzed {} URLs", "Summary".bright_green(), urls.len());
+        }
+        let elapsed_secs = global_start.elapsed().as_secs();
+        println!(" :: {} : {} total matched across all URLs", 
+            "Results".bright_blue(), 
+            total_matched
+        );
+        println!(" :: {} : Duration: [0:00:{:02}]", "Time".bright_blue(), elapsed_secs);
         println!();
         println!("{}", "________________________________________________".bright_white());
     }
