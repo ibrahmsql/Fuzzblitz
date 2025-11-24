@@ -223,14 +223,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // Statistics for this URL
         let stats = Arc::new(Statistics::new(total_requests));
         
-        // Prepare payloads
-        let mut all_payloads = Vec::new();
-        for payload_map in payload_gen.clone() {
-            all_payloads.push(payload_map);
-        }
-        
-        // Process requests concurrently
-        let results = stream::iter(all_payloads)
+        // Process requests concurrently - use iterator directly instead of collecting
+        let results = stream::iter(payload_gen.clone())
             .map(|payload_map| {
                 let url = url.clone();
                 let http_client = Arc::clone(&http_client);
