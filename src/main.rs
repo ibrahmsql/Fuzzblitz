@@ -151,8 +151,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     
     // Setup payload generator
     let mode = FuzzMode::from_str(&args.mode);
-    let payload_gen = PayloadGenerator::new(wordlists.clone(), mode);
-    let total_requests = payload_gen.total_requests();
+    
+    // Calculate total requests once
+    let temp_gen = PayloadGenerator::new(wordlists.clone(), mode);
+    let total_requests = temp_gen.total_requests();
     
     if !args.silent {
         println!("[+] Total requests: {}", total_requests);
@@ -223,8 +225,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // Statistics for this URL
         let stats = Arc::new(Statistics::new(total_requests));
         
-        // Process requests concurrently - use iterator directly instead of collecting
-        let results = stream::iter(payload_gen.clone())
+        // Create fresh PayloadGenerator for this URL (avoid expensive clone)
+        let payload_gen = PayloadGenerator::new(wordlists.clone(), mode);
+        
+        // Process requests concurrently - stream directly from iterator
+        let results = stream::iter(payload_gen)
             .map(|payload_map| {
                 let url = url.clone();
                 let http_client = Arc::clone(&http_client);
